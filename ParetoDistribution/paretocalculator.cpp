@@ -15,6 +15,12 @@ bool ParetoCalculator::loadDataFromFiles(QList<QUrl> fileNames)
     for (const auto& fileName : fileNames)
     {
         QString pathToFile = fileName.path();
+#ifdef _WIN32
+        if (pathToFile.size() > 0 && pathToFile.front() == "/")
+        {
+            pathToFile = pathToFile.remove(0, 1);
+        }
+#endif
         QFile file(pathToFile);
         qDebug() << pathToFile;
 
