@@ -5,19 +5,20 @@
 
 ParetoCalculator::ParetoCalculator(QObject *parent)
     : QObject(parent)
-    , m_processData("")
 {
 }
 
-bool ParetoCalculator::loadDataFromFiles(const QStringList& fileNames)
+bool ParetoCalculator::loadDataFromFiles(QList<QUrl> fileNames)
 {
     bool isAnythingExists = false;
 
-    for (auto fileName : fileNames)
+    for (const auto& fileName : fileNames)
     {
-        QFile file(fileName);
-        qDebug() << fileName;
-        if ((file.exists()) && (file.open(QIODevice::ReadOnly)))
+        QString pathToFile = fileName.path();
+        QFile file(pathToFile);
+        qDebug() << pathToFile;
+
+        if (file.exists() && file.open(QIODevice::ReadOnly))
         {
             isAnythingExists = true;
             m_processData += file.readAll() + " ";
@@ -25,7 +26,7 @@ bool ParetoCalculator::loadDataFromFiles(const QStringList& fileNames)
         }
         else
         {
-            qDebug() << "Cannot open the file " << fileName;
+            qDebug() << "Cannot open the file " << pathToFile;
         }
     }
 
@@ -45,6 +46,7 @@ void ParetoCalculator::buildDistribution()
     }
 
     QVector<QPair<QString, int>> setOfWords;
+    setOfWords.reserve(dict.size());
     for (auto it = dict.begin(); it != dict.end(); ++it)
     {
         setOfWords.push_back(qMakePair(it.key(), it.value()));
@@ -53,29 +55,74 @@ void ParetoCalculator::buildDistribution()
     const int C = words.size();
     const int N = setOfWords.size();
 
-    qSort(setOfWords.begin(), setOfWords.end(), [] (QPair<QString, int> a, QPair<QString, int> b)
+    std::sort(setOfWords.begin(), setOfWords.end(), [] (const QPair<QString, int>& a, const QPair<QString, int>& b)
     {
         return a.second > b.second;
     });
 
-    auto gammaCalculator = [] (float mu, float v) -> float
-    {
-        return 1 - (std::log(mu) / std::log(v));
-    };
+    //    auto gammaCalculator = [] (float mu, float v) -> float
+    //    {
+    //        return 1 - (std::log(mu) / std::log(v));
+    //    };
 
     // process
+    m_words.reserve(N);
+    m_mus.reserve(N);
+    m_vs.reserve(N);
+
     int sum = 0;
+
     for (int i(0); i < N; ++i)
     {
         sum += setOfWords[i].second;
-        const float mu = float(sum) / C;
-        const float v = float(i + 1) / N;
+        const float MU = float(sum) / C;
+        const float V = float(i + 1) / N;
 
         // internal keeping
         m_words.append(setOfWords[i].first);
-        m_mus.push_back(mu);
-        m_vs.push_back(v);
+        m_mus.push_back(MU);
+        m_vs.push_back(V);
 
-//        qDebug() << "sum = " << sum << " MU = " << mu << " v = " << v << " g = " << gammaCalculator(mu, v);
+        //        qDebug() << "sum = " << sum << " MU = " << MU << " v = " << V << " g = " << gammaCalculator(MU, V);
     }
+
+    emit wordsChanged(m_words);
+    emit musChanged(m_mus);
+    emit vsChanged(m_vs);
+}
+
+QPointF ParetoCalculator::getNearestPoint(QPointF point)
+{
+    qreal x = m_vs[m_vs.size() - 1].toReal();
+    qreal y = m_mus[m_mus.size() - 1].toReal();
+
+    for (int i(0); i < m_vs.size(); ++i)
+    {
+        if (m_vs[i].toReal() >= point.rx()) {
+            x = m_vs[i].toReal();
+            break;
+        }
+    }
+
+    for (int i(0); i < m_mus.size(); ++i)
+    {
+        if (m_mus[i].toReal() >= point.ry()) {
+            y = m_mus[i].toReal();
+            break;
+        }
+    }
+
+    return QPointF(x, y);
+}
+
+QString ParetoCalculator::getNearestPointName(QPointF point)
+{
+    for (int i(0); i < m_words.size(); ++i)
+    {
+        if (m_vs[i].toReal() >= point.rx()) {
+            return m_words[i];
+        }
+    }
+
+    return m_words[m_words.size() - 1];
 }

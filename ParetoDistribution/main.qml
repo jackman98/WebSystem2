@@ -1,46 +1,91 @@
 import QtQuick 2.12
-import QtQuick.Window 2.12
+import QtQuick.Controls 2.5
 import QtCharts 2.3
+import Qt.labs.platform 1.1 as Labs
 
-Window {
+ApplicationWindow {
     id: root
 
-    visible: true
     width: 640
     height: 480
-    title: qsTr("Hello World")
 
-    property var modelOfWords: ["word1", "word2", "word3", "word4", "word5"]
+    title: qsTr("Pareto Distribution")
+    visible: true
 
-    ChartView {
-        title: "Line"
-        anchors.fill: parent
-        antialiasing: true
-
-        LineSeries {
-            name: "LineSeries"
-            axisX: CategoryAxis {
-
-                labelsAngle: 90
-                labelsPosition: CategoryAxis.AxisLabelsPositionOnValue
-
-                startValue: 0
-
-                Component.onCompleted: {
-                    for (var i = 0; i < root.modelOfWords.length; i++) {
-                        append(root.modelOfWords[i], i + 1);
-                    }
+    menuBar: MenuBar {
+        Menu {
+            title: "File"
+            Action {
+                text: "&Open"
+                onTriggered: {
+                    _fileDialog.open();
                 }
             }
+        }
+    }
 
-            XYPoint { x: 0; y: 0 }
-            XYPoint { x: 1.1; y: 2.1 }
-            XYPoint { x: 1.9; y: 3.3 }
-            XYPoint { x: 2.1; y: 2.1 }
-            XYPoint { x: 2.9; y: 4.9 }
-            XYPoint { x: 3.4; y: 3.0 }
-            XYPoint { x: 4.1; y: 3.3 }
-            onHovered: console.log("onClicked: " + point.x + ", " + point.y);
+    Labs.FileDialog {
+        id: _fileDialog
+
+        fileMode: Labs.FileDialog.OpenFiles
+
+        onAccepted: {
+            if (paretoCalculator.loadDataFromFiles(_fileDialog.files)) {
+                paretoCalculator.buildDistribution();
+            }
+        }
+    }
+
+
+    ChartView {
+        id: _chartView
+
+        anchors.fill: parent
+
+        animationOptions: ChartView.AllAnimations
+        antialiasing: true
+
+        Label {
+            id: _word
+        }
+
+        LineSeries {
+            id: _lineSeries
+
+            name: "Pareto Distribution"
+
+            pointsVisible: true
+        }
+
+        MouseArea {
+            id: _mouseArea
+
+            anchors.fill: parent
+
+            hoverEnabled: true
+            enabled: false
+
+            onMouseXChanged: {
+                var pointIntoChartView = mapToItem(_chartView, mouseX, mouseY);
+
+                var value = _chartView.mapToValue(pointIntoChartView, _lineSeries);
+
+                _word.x = pointIntoChartView.x + 10;
+                _word.y = pointIntoChartView.y + 10;
+
+                _word.text = paretoCalculator.getNearestPointName(value);
+            }
+        }
+    }
+
+    Connections {
+        target: paretoCalculator
+
+        onWordsChanged: {
+            for (var i = 0; i < words.length; i++) {
+                _lineSeries.append(paretoCalculator.vs[i], paretoCalculator.mus[i]);
+            }
+            _mouseArea.enabled = true;
         }
     }
 }
