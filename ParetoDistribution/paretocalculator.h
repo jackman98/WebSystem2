@@ -34,6 +34,8 @@ signals:
     void musChanged(const QVariantList& mus);
     void vsChanged(const QVariantList& vs);
 
+    void emptyData();
+
 private:
     QString m_processData {};
 

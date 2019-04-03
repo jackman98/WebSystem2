@@ -48,6 +48,15 @@ bool ParetoCalculator::loadDataFromFiles(QList<QUrl> fileNames)
 
 void ParetoCalculator::buildDistribution()
 {
+    if (m_processData.isEmpty()) {
+        emit emptyData();
+
+        return;
+    }
+
+    resetData();
+    m_setOfWords.clear();
+
     QString preparedStr = m_processData.remove(QRegExp("[,.!?-\"\r\n]"));
 
     QStringList words = preparedStr.split(" ");
@@ -78,7 +87,11 @@ void ParetoCalculator::buildDistribution()
 
 void ParetoCalculator::rebuildDistributionWithoutTail()
 {
-    assert(!m_setOfWords.empty());
+    if (m_setOfWords.empty()) {
+        emit emptyData();
+
+        return;
+    }
 
     resetData();
 

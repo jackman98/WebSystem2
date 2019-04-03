@@ -13,15 +13,76 @@ ApplicationWindow {
     visible: true
 
     menuBar: MenuBar {
-        Menu {
-            title: "File"
-            Action {
-                text: "&Open"
-                onTriggered: {
-                    _fileDialog.open();
+        MenuBarItem {
+            text: "File"
+            menu: Menu {
+                Action {
+                    text: "&Open"
+                    onTriggered: {
+                        _fileDialog.open();
+                    }
                 }
             }
         }
+        MenuBarItem {
+            text: "Build graphic"
+
+            onTriggered: {
+                _lineSeries.clear();
+                paretoCalculator.buildDistribution();
+            }
+
+            onHoveredChanged: {
+                highlighted = hovered;
+            }
+        }
+        MenuBarItem {
+            text: "Without tail"
+
+            onTriggered: {
+                _lineSeries.clear();
+                paretoCalculator.rebuildDistributionWithoutTail();
+            }
+
+            onHoveredChanged: {
+                highlighted = hovered;
+            }
+        }
+        MenuBarItem {
+            text: "Clear graphic"
+
+            onTriggered: {
+                _lineSeries.clear();
+            }
+
+            onHoveredChanged: {
+                highlighted = hovered;
+            }
+        }
+    }
+
+    Popup {
+        id: _popup
+
+        property alias text: _label.text
+
+        anchors.centerIn: Overlay.overlay
+
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: parent.width / 2
+        height: parent.height / 2
+
+        Label {
+            id: _label
+
+            anchors.centerIn: parent
+
+            fontSizeMode: Text.Fit
+            minimumPixelSize: 10
+            font.pixelSize: 24
+        }
+
     }
 
     Labs.FileDialog {
@@ -30,10 +91,8 @@ ApplicationWindow {
         fileMode: Labs.FileDialog.OpenFiles
 
         onAccepted: {
-            if (paretoCalculator.loadDataFromFiles(_fileDialog.files)) {
-                paretoCalculator.buildDistribution();
-                // TODO need to call after reset the visual data
-//                paretoCalculator.rebuildDistributionWithoutTail();
+            if (!paretoCalculator.loadDataFromFiles(_fileDialog.files)) {
+                _popup.text = "Coudn't open file(s)";
             }
         }
     }
@@ -88,6 +147,11 @@ ApplicationWindow {
                 _lineSeries.append(paretoCalculator.vs[i], paretoCalculator.mus[i]);
             }
             _mouseArea.enabled = true;
+        }
+
+        onEmptyData: {
+            _popup.text = "Empty data!";
+            _popup.open();
         }
     }
 }
