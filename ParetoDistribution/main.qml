@@ -1,7 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.5
 import QtCharts 2.3
-import QtQuick.Dialogs 1.3
+import Qt.labs.platform 1.1 as Labs
 
 ApplicationWindow {
     id: root
@@ -24,13 +24,13 @@ ApplicationWindow {
         }
     }
 
-    FileDialog {
+    Labs.FileDialog {
         id: _fileDialog
 
-        selectMultiple: true
+        fileMode: Labs.FileDialog.OpenFiles
 
         onAccepted: {
-            if (paretoCalculator.loadDataFromFiles(_fileDialog.fileUrls)) {
+            if (paretoCalculator.loadDataFromFiles(_fileDialog.files)) {
                 paretoCalculator.buildDistribution();
                 // TODO need to call after reset the visual data
 //                paretoCalculator.rebuildDistributionWithoutTail();
