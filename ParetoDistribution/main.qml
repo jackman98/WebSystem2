@@ -32,6 +32,8 @@ ApplicationWindow {
         onAccepted: {
             if (paretoCalculator.loadDataFromFiles(_fileDialog.fileUrls)) {
                 paretoCalculator.buildDistribution();
+                // TODO need to call after reset the visual data
+//                paretoCalculator.rebuildDistributionWithoutTail();
             }
         }
     }

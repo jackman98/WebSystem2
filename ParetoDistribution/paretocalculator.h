@@ -16,6 +16,8 @@ class ParetoCalculator : public QObject
 public:
     explicit ParetoCalculator(QObject *parent = nullptr);
 
+    void resetData();
+
     const QStringList& words() const { return m_words; }
     const QVariantList& mus() const { return m_mus; }
     const QVariantList& vs() const { return m_vs; }
@@ -23,6 +25,7 @@ public:
 public slots:
     bool loadDataFromFiles(QList<QUrl> fileNames);
     void buildDistribution();
+    void rebuildDistributionWithoutTail();
     QPointF getNearestPoint(QPointF point);
     QString getNearestPointName(QPointF point);
 
@@ -37,28 +40,12 @@ private:
     QStringList m_words {};
     QVariantList m_mus {};
     QVariantList m_vs {};
+
+    QVector<QPair<QString, int>> m_setOfWords;
+
+private:
+    void processSetOfWords();
 };
 
-// !! - Example of using - !!
-//#include "paretocalculator.h"
-
-//QStringList fileNames = QFileDialog::getOpenFileNames(this,
-//    tr("Open Document"), "", tr("Document Files (*.docx *.txt)"));
-
-//ParetoCalculator calculator;
-//const bool isDataPresent = calculator.loadDataFromFiles(fileNames);
-//if (isDataPresent)
-//{
-//    calculator.buildDistribution();
-
-//    //Use calculated data
-//    QStringList names = calculator.getNames();
-//    QVector<float> mus = calculator.getMus();
-//    QVector<float> vs = calculator.getVs();
-//}
-//else
-//{
-//    qDebug() << "Prepare data.";
-//}
 
 #endif // PARETOCALCULATOR_H

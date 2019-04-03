@@ -8,6 +8,13 @@ ParetoCalculator::ParetoCalculator(QObject *parent)
 {
 }
 
+void ParetoCalculator::resetData()
+{
+    m_words.clear();
+    m_mus.clear();
+    m_vs.clear();
+}
+
 bool ParetoCalculator::loadDataFromFiles(QList<QUrl> fileNames)
 {
     bool isAnythingExists = false;
@@ -51,46 +58,37 @@ void ParetoCalculator::buildDistribution()
         dict[words[i].toLower()]++;
     }
 
-    QVector<QPair<QString, int>> setOfWords;
-    setOfWords.reserve(dict.size());
+    m_setOfWords.reserve(dict.size());
     for (auto it = dict.begin(); it != dict.end(); ++it)
     {
-        setOfWords.push_back(qMakePair(it.key(), it.value()));
+        m_setOfWords.push_back(qMakePair(it.key(), it.value()));
     }
 
-    const int C = words.size();
-    const int N = setOfWords.size();
-
-    std::sort(setOfWords.begin(), setOfWords.end(), [] (const QPair<QString, int>& a, const QPair<QString, int>& b)
+    std::sort(m_setOfWords.begin(), m_setOfWords.end(), [] (const QPair<QString, int>& a, const QPair<QString, int>& b)
     {
         return a.second > b.second;
     });
 
-    //    auto gammaCalculator = [] (float mu, float v) -> float
-    //    {
-    //        return 1 - (std::log(mu) / std::log(v));
-    //    };
+    processSetOfWords();
 
-    // process
-    m_words.reserve(N);
-    m_mus.reserve(N);
-    m_vs.reserve(N);
+    emit wordsChanged(m_words);
+    emit musChanged(m_mus);
+    emit vsChanged(m_vs);
+}
 
-    int sum = 0;
+void ParetoCalculator::rebuildDistributionWithoutTail()
+{
+    assert(!m_setOfWords.empty());
 
-    for (int i(0); i < N; ++i)
-    {
-        sum += setOfWords[i].second;
-        const float MU = float(sum) / C;
-        const float V = float(i + 1) / N;
+    resetData();
 
-        // internal keeping
-        m_words.append(setOfWords[i].first);
-        m_mus.push_back(MU);
-        m_vs.push_back(V);
+    const int oldN = m_setOfWords.size();
+    const int N = static_cast<int>(oldN * 0.2f);
 
-        //        qDebug() << "sum = " << sum << " MU = " << MU << " v = " << V << " g = " << gammaCalculator(MU, V);
-    }
+    // Delete tail
+    m_setOfWords.remove(N, oldN - N);
+
+    processSetOfWords();
 
     emit wordsChanged(m_words);
     emit musChanged(m_mus);
@@ -131,4 +129,41 @@ QString ParetoCalculator::getNearestPointName(QPointF point)
     }
 
     return m_words[m_words.size() - 1];
+}
+
+void ParetoCalculator::processSetOfWords()
+{
+    // process
+    const int N = m_setOfWords.size();
+
+    int C = 0;
+    for (int i(0); i < N; ++i)
+    {
+        C += m_setOfWords[i].second;
+    }
+
+    m_words.reserve(N);
+    m_mus.reserve(N);
+    m_vs.reserve(N);
+
+    //    auto gammaCalculator = [] (float mu, float v) -> float
+    //    {
+    //        return 1 - (std::log(mu) / std::log(v));
+    //    };
+
+    int sum = 0;
+
+    for (int i(0); i < N; ++i)
+    {
+        sum += m_setOfWords[i].second;
+        const float MU = float(sum) / C;
+        const float V = float(i + 1) / N;
+
+        // internal keeping
+        m_words.append(m_setOfWords[i].first);
+        m_mus.push_back(MU);
+        m_vs.push_back(V);
+
+        //        qDebug() << "sum = " << sum << " MU = " << MU << " v = " << V << " g = " << gammaCalculator(MU, V);
+    }
 }
