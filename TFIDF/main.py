@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     view.rootContext().setContextProperty("Calculator", calculator)
     view.setSource( QtCore.QUrl( "./WebSystem2/TFIDF/main.qml" ) )
-    view.show()
+#    view.show()
 
     sys.exit( app.exec_() )
 
