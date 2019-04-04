@@ -6,6 +6,9 @@ import os
 class Calculator(QObject):
     def __init__(self):
         QObject.__init__(self)
+        self.__word_set = set()
+        self.ranged_word_list = []
+
         self.main()
 
     # cигнал передающий сумму
@@ -45,7 +48,7 @@ class Calculator(QObject):
         i = 0
         for text in texts:
             i += 1
-            count = count_words(text)
+            count = self.count_words(text)
             temp = {'doc_id': i, 'doc_length': count}
             doc_info.append(temp)
 
@@ -54,7 +57,7 @@ class Calculator(QObject):
 
     def count_words(self, text):
         count = 0
-        words = word_tokenize(text)
+        words = self.word_tokenize(text)
 
         for _ in words:
             count += 1
@@ -68,9 +71,11 @@ class Calculator(QObject):
         for text in korpus:
             i += 1
             freq_dict = {}
-            words = word_tokenize(text)
+            words = self.word_tokenize(text)
             for word in words:
                 word = word.lower()
+                self.__word_set.add(word)
+
                 if word in freq_dict:
                     freq_dict[word] += 1
                 else:
@@ -143,7 +148,7 @@ class Calculator(QObject):
         return texts
 
     def word_tokenize(self, text):
-        words = remove_string_special_characters(text).split()
+        words = self.remove_string_special_characters(text).split()
         return list(map(lambda x: x.lower(), words))
 
 
@@ -159,6 +164,26 @@ class Calculator(QObject):
         idf_score = self.compute_idf(doc_info, freq_dict_list)
 
         tdidf_score = self.compute_tfidf(tf_score, idf_score)
+
+        
+        word_range_score = {}
+        for _, el in enumerate(tdidf_score):
+            word = el['key']
+            score = el['tfidf_score']
+
+            if word not in word_range_score:
+                word_range_score[word] = 0.0
+            word_range_score[word] = word_range_score[word] + score
+
+        for _, word in enumerate(self.__word_set):
+            word_range_score[word] /= len(texts)
+            self.ranged_word_list.append({'key': word, 'score': word_range_score[word]})
+        
+        self.ranged_word_list.sort(key=lambda x: x['score'], reverse=True)
+        # PLEASE TAKE THIS VALUE
+
+        # for _, el in enumerate(self.ranged_word_list):
+        #     print(el)
 
         # Example
         # for _, el in enumerate(tdidf_score):
