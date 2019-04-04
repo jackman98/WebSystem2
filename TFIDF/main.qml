@@ -9,50 +9,16 @@ ApplicationWindow {
     width: 640
     height: 480
 
-    title: qsTr("Pareto Distribution")
+    title: qsTr("TFIDF Distribution")
     visible: true
 
     menuBar: MenuBar {
-        MenuBarItem {
-            text: "File"
-            menu: Menu {
-                Action {
-                    text: "&Open"
-                    onTriggered: {
-                        _fileDialog.open();
-                    }
-                }
-            }
-        }
         MenuBarItem {
             text: "Build graphic"
 
             onTriggered: {
                 _lineSeries.clear();
-                paretoCalculator.buildDistribution();
-            }
-
-            onHoveredChanged: {
-                highlighted = hovered;
-            }
-        }
-        MenuBarItem {
-            text: "Without tail"
-
-            onTriggered: {
-                _lineSeries.clear();
-                paretoCalculator.rebuildDistributionWithoutTail();
-            }
-
-            onHoveredChanged: {
-                highlighted = hovered;
-            }
-        }
-        MenuBarItem {
-            text: "Clear graphic"
-
-            onTriggered: {
-                _lineSeries.clear();
+                calculator.execute();
             }
 
             onHoveredChanged: {
@@ -112,7 +78,7 @@ ApplicationWindow {
         LineSeries {
             id: _lineSeries
 
-            name: "Pareto Distribution"
+            name: "TFIDF Distribution"
 
             pointsVisible: true
         }
@@ -138,19 +104,27 @@ ApplicationWindow {
         }
     }
 
-    //    Connections {
-    //        target: paretoCalculator
+        Connections {
+            target: calculator
 
-    //        onWordsChanged: {
-    //            for (var i = 0; i < words.length; i++) {
-    //                _lineSeries.append(paretoCalculator.vs[i], paretoCalculator.mus[i]);
-    //            }
-    //            _mouseArea.enabled = true;
-    //        }
+            onWordsChanged: {
+                var words = calculator.words;
 
-    //        onEmptyData: {
-    //            _popup.text = "Empty data!";
-    //            _popup.open();
-    //        }
-    //    }
+                var step = 1 / words.length;
+                var j = 0;
+
+                for (var i = 0; i < words.length; i++) {
+                    console.log(words[i]['key'])
+                    _lineSeries.append(words[i]['score'] * 100, j);
+                    j = j + step;
+                }
+
+//                _mouseArea.enabled = true;
+            }
+
+//            onEmptyData: {
+//                _popup.text = "Empty data!";
+//                _popup.open();
+//            }
+        }
 }

@@ -1,34 +1,33 @@
 import math
 import re
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty
 import os
+import codecs
 
 class Calculator(QObject):
     def __init__(self):
         QObject.__init__(self)
         self.__word_set = set()
-        self.ranged_word_list = []
+        self.ranged_word_list = list()
 
-        self.main()
+    wordsChanged = pyqtSignal(list, arguments=["words"])
+    dataChanged = pyqtSignal()
 
-    # cигнал передающий сумму
-    # обязательно даём название аргументу через arguments=['sum']
-    # иначе нельзя будет его забрать в QML
-    sumResult = pyqtSignal(int, arguments=['sum'])
+    @pyqtProperty(list, notify=wordsChanged)
+    def words(self):
+        return self.ranged_word_list
 
-    subResult = pyqtSignal(int, arguments=['sub'])
+    @words.setter
+    def words(self, words):
+        if words != self.ranged_word_list:
+            self.ranged_word_list = words
+            self.wordsChanged.emit(self.ranged_word_list)
 
-    # слот для суммирования двух чисел
-    @pyqtSlot(int, int)
-    def sum(self, arg1, arg2):
-        # складываем два аргумента и испускаем сигнал
-        self.sumResult.emit(arg1 + arg2)
 
-    # слот для вычитания двух чисел
-    @pyqtSlot(int, int)
-    def sub(self, arg1, arg2):
-        # вычитаем аргументы и испускаем сигнал
-        self.subResult.emit(arg1 - arg2)
+    @pyqtSlot()
+    def getWords(self):
+        self.wordsChanged.emit(self.ranged_word_list)
+        return self.ranged_word_list
 
     def remove_string_special_characters(self, s):
 
@@ -134,7 +133,8 @@ class Calculator(QObject):
     def read_texts(self):
         files = []
 
-        data_set_folder = os.path.abspath('../DataSet')
+        data_set_folder = os.path.abspath('WebSystem2/DataSet')
+
         for _, _, filenames in os.walk(data_set_folder):
                 files.extend(filenames)
 
@@ -142,8 +142,9 @@ class Calculator(QObject):
         for _, filename in enumerate(files):
             full_path = f"{data_set_folder}/{filename}"
             if os.path.exists(full_path):
-                with open(full_path) as f:
-                    texts.append(f.read())
+                with codecs.open(full_path, 'r', encoding='utf-8',
+                                 errors='ignore') as fdata:
+                                     texts.append(fdata.read())
 
         return texts
 
@@ -151,8 +152,8 @@ class Calculator(QObject):
         words = self.remove_string_special_characters(text).split()
         return list(map(lambda x: x.lower(), words))
 
-
-    def main(self):
+    @pyqtSlot()
+    def execute(self):
         self.unprepared_texts = self.read_texts()
 
         texts = [self.remove_string_special_characters(t) for t in self.unprepared_texts]
@@ -180,10 +181,12 @@ class Calculator(QObject):
             self.ranged_word_list.append({'key': word, 'score': word_range_score[word]})
         
         self.ranged_word_list.sort(key=lambda x: x['score'], reverse=True)
+        self.wordsChanged.emit(self.ranged_word_list)
+        self.dataChanged.emit()
         # PLEASE TAKE THIS VALUE
 
-        # for _, el in enumerate(self.ranged_word_list):
-        #     print(el)
+#        for _, el in enumerate(self.ranged_word_list):
+#            print(el)
 
         # Example
         # for _, el in enumerate(tdidf_score):

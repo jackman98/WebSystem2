@@ -11,11 +11,9 @@ if __name__ == '__main__':
 
     view = QtQuick.QQuickView()
 
-
     calculator = T.Calculator()
-    calculator.main()
 
-    view.rootContext().setContextProperty("Calculator", calculator)
+    view.rootContext().setContextProperty("calculator", calculator)
     view.setSource( QtCore.QUrl( "./WebSystem2/TFIDF/main.qml" ) )
 #    view.show()
 
